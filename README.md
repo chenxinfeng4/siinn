@@ -5,16 +5,20 @@ Simple Inspecting and Inferencing Neural Network (SIINN) is an open source tool 
 SINN is widely supported in many deployed neural network models.
 
 ## Install SINN
-`pip install sinn`
+```
+pip install sinn
+siinn inspect ./yolovn8.onnx|om|xml|engine|rknn
+siinn run ./yolovn8.onnx
+```
 
 ## Supported neural network platforms.
-[+] ONNX: *.onnx
-[+] Tensorrt: *.engine
-[+] OpenVINO: *.xml
-[+] RKNN (rockchip rk3588): *.rknn
-[+] HiAscend (mindx): *.om
-[-] TensorFlow: *.pd
-[-] CoreML: *.mlmodel, *.mlpackage
+- ONNX: *.onnx
+- Tensorrt: *.engine
+- OpenVINO: *.xml
+- RKNN (rockchip rk3588): *.rknn
+- HiAscend (mindx): *.om
+- (on the way) TensorFlow: *.pd
+- (on the way) CoreML: *.mlmodel, *.mlpackage
 
 ## Inspect the input&output layers
 The input&output layers is a interface of the model file. It's important to get the name, shape and dtype of the input&output layers before you can use a model.
