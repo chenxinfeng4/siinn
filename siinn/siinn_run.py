@@ -204,7 +204,7 @@ def run_coreml(model_path:str):
         result = model(IN_dict)
     
 
-def run_inference(model_path:str, igpu:int):
+def run_proxy(model_path:str, igpu:int):
     assert osp.isfile(model_path)
     ext = osp.splitext(model_path)[-1]
 
@@ -227,4 +227,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     model_path = args.model_path
     igpu = args.ithread
-    run_inference(model_path, igpu)
+    run_proxy(model_path, igpu)

@@ -201,9 +201,14 @@ def inspect_coreml(model_path:str) -> list:
     disp_inputs_outputs(input_layers, output_layers)
     return model, input_layers, output_layers
 
+def inspect_keras(model_path:str) -> list:
+    from tensorflow.keras.models import load_model
+    model = load_model(model_path)
+    model.input.shape
+    model.input.dtype
 
 def inspect_proxy(model_path:str, quiet=False) -> list:
-    assert osp.isfile(model_path)
+    assert osp.isfile(model_path) or osp.isdir(model_path)
     ext = osp.splitext(model_path)[-1]
     global tprint
     _tprint = tprint

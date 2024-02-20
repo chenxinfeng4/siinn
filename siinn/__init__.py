@@ -1,6 +1,6 @@
 import argparse
-from siinn.siinn_inspect import main_inspect
-from siinn.siinn_run import main_inference
+from siinn.siinn_inspect import inspect_proxy
+from siinn.siinn_run import run_proxy
 
 
 def main():
@@ -11,9 +11,9 @@ def main():
     assert args.mode in ['inspect', 'run', 'inference', 'speed']
 
     if args.mode == 'inspect':
-        main_inspect(args.modelfile)
+        inspect_proxy(args.modelfile)
     else:
-        main_inference(args.modelfile)
+        run_proxy(args.modelfile)
 
 if __name__ == "__main__":
     main()

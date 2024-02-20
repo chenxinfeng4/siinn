@@ -17,8 +17,8 @@ siinn run ./yolovn8.onnx
 - OpenVINO: *.xml
 - RKNN (rockchip rk3588): *.rknn
 - HiAscend (mindx): *.om
+- CoreML: *.mlpackage
 - (on the way) TensorFlow: *.pd
-- (on the way) CoreML: *.mlmodel, *.mlpackage
 
 ## Inspect the input&output layers
 The input&output layers is a interface of the model file. It's important to get the name, shape and dtype of the input&output layers before you can use a model.

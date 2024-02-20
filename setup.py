@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text('utf-8')
 
 setup(
     name='siinn',
-    version='0.1.0',
+    version='0.1.1',
     packages=['siinn'],
     entry_points={
         'console_scripts': [
