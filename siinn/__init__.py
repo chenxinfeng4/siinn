@@ -13,7 +13,7 @@ def main():
     if args.mode == 'inspect':
         inspect_proxy(args.modelfile)
     else:
-        run_proxy(args.modelfile)
+        run_proxy(args.modelfile, 0)
 
 if __name__ == "__main__":
     main()
