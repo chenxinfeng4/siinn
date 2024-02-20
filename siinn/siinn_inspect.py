@@ -45,11 +45,10 @@ def disp_inputs_outputs(input_layers:List[dict], output_layers:List[dict]):
         tprint(f'{idx_name} [dtype={dtype}, shape={shape}]')
 
 
-def main_onnx(onnx_file):
+def inspect_onnx(onnx_file) -> list:
     import onnx
     # Load the ONNX model
     model = onnx.load(onnx_file)
-    num_inputs = len(model.graph.input)
 
     # print headers
     tprint(f'Loading model: {onnx_file}', prefix='[I]')
@@ -81,9 +80,10 @@ def main_onnx(onnx_file):
     tprint(f"---- {num_initializers} Initializer(s) ----")
     tprint('')
     tprint(f"---- {num_nodes} Node(s) ----")
+    return model, input_layers, output_layers
 
 
-def main_om(model_path):
+def inspect_om(model_path) -> list:
     from mindx.sdk import base
     model = base.model(modelPath=model_path, deviceId=0)  # 初始化 base.model 类
 
@@ -112,9 +112,10 @@ def main_om(model_path):
         item['dtype'] = model.output_dtype(i).name
         output_layers.append(item)
     disp_inputs_outputs(input_layers, output_layers)
+    return model, input_layers, output_layers
 
 
-def main_trt(model_path):
+def inspect_trt(model_path) -> list:
     import tensorrt as trt
     logger = trt.Logger(trt.Logger.INTERNAL_ERROR)
 
@@ -146,9 +147,10 @@ def main_trt(model_path):
             output_layers.append(item)
 
     disp_inputs_outputs(input_layers, output_layers)
+    return None, input_layers, output_layers
 
 
-def main_openvino(model_path:str):
+def inspect_openvino(model_path:str):
     from openvino.runtime import Core
     ie=Core()
     model = ie.read_model(model=model_path)
@@ -169,24 +171,63 @@ def main_openvino(model_path:str):
     tprint('==== OpenVINO Model ====', prefix='[I]')
     tprint('')
     disp_inputs_outputs(input_layers, output_layers)
+    return model, input_layers, output_layers
 
 
-def main_inspect(model_path:str):
+def inspect_coreml(model_path:str) -> list:
+    import coremltools as ct
+    model = ct.models.MLModel(model_path)
+    description = model._spec.description
+    input_layers, output_layers = [], []
+    for layer in description.input:
+        name = layer.name
+        array = layer.type.multiArrayType
+        shape = tuple(array.shape)
+        dtype = str(array).strip().split(" ")[-1].lower()
+        item = {"name" : name, "shape" : shape, "dtype" : dtype}
+        input_layers.append(item)
+
+    for layer in description.output:
+        name = layer.name
+        array = layer.type.multiArrayType
+        shape = tuple(array.shape)
+        dtype = str(array).strip().split(" ")[-1].lower()
+        item = {"name" : name, "shape" : shape, "dtype" : dtype}
+        output_layers.append(item)
+
+    tprint(f'Loading model: {model_path}', prefix='[I]')
+    tprint('==== CoreML Model ====', prefix='[I]')
+    tprint('')
+    disp_inputs_outputs(input_layers, output_layers)
+    return model, input_layers, output_layers
+
+
+def inspect_proxy(model_path:str, quiet=False) -> list:
     assert osp.isfile(model_path)
     ext = osp.splitext(model_path)[-1]
+    global tprint
+    _tprint = tprint
+    if quiet:
+        tprint = lambda *args, **kwargs: None
+
     if ext == '.onnx':
-        main_onnx(model_path)
+        inspect_onnx(model_path)
     elif ext == '.om':
-        main_om(model_path)
+        inspect_om(model_path)
     elif ext in ['.engine', '.trt']:
-        main_trt(model_path)
-    elif ext in ['.xml']:
-        main_openvino(model_path)
-        
+        inspect_trt(model_path)
+    elif ext == '.xml':
+        inspect_openvino(model_path)
+    elif ext in ['.mlpackage', '.mlpackage/']:
+        inspect_coreml(model_path)
+    else:
+        tprint = _tprint
+        raise ValueError(f'Unsupported model extension: {ext}')
+    tprint = _tprint
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ONNX Model Info Printer')
     parser.add_argument('model_path', type=str, help='Path to ONNX model')
     args = parser.parse_args()
     model_path = args.model_path
-    main_inspect(args.model_path)
+    inspect_proxy(args.model_path)

@@ -4,6 +4,9 @@ import numpy as np
 import tqdm
 import argparse
 import os.path as osp
+import siinn.siinn_inspect as si
+from collections import OrderedDict
+from typing import List
 
 
 def get_node_info(node):
@@ -19,7 +22,7 @@ def get_node_info(node):
     return node_name, dtype_str, node_size
 
 
-def main_onnx(onnx_file:str):
+def run_onnx(onnx_file:str):
     import onnx
     import onnxruntime
     sess = onnxruntime.InferenceSession(onnx_file)
@@ -45,7 +48,7 @@ def main_onnx(onnx_file:str):
         result = sess.run(None, IN_dict)
 
 
-def main_om(model_path:str, igpu:int):
+def run_om(model_path:str, igpu:int):
     from mindx.sdk import base, Tensor
     model = base.model(modelPath=model_path, deviceId=0)  # 初始化 base.model 类
 
@@ -75,7 +78,7 @@ def main_om(model_path:str, igpu:int):
         result = model.infer(IN_tensors)
 
 
-def main_rknn(model_path:str, igpu:int):
+def run_rknn(model_path:str, igpu:int):
     # Get input shape
     import onnx
     onnx_file = model_path.replace('.rknn', '.onnx')
@@ -109,7 +112,7 @@ def main_rknn(model_path:str, igpu:int):
         result = rknn_lite.inference(inputs=IN_list)
 
 
-def main_trt(model_path:str, igpu:int):
+def run_trt(model_path:str, igpu:int):
     import torch
     try:
         from torch2trt import TRTModule
@@ -150,13 +153,20 @@ def main_trt(model_path:str, igpu:int):
             torch.cuda.current_stream().synchronize()
 
 
-def create_IN_list_np(input_layers):
+def create_IN_list_np(input_layers) -> List[np.ndarray]:
     out_list = [np.random.random(l['shape']).astype(l['dtype'])
                 for l in input_layers]
     return out_list
 
 
-def main_openvino(model_path:str):
+def create_IN_dict_np(input_layers) -> OrderedDict:
+    out_dict = OrderedDict()
+    for l in input_layers:
+        out_dict[l['name']] = np.random.random(l['shape']).astype(l['dtype'])
+    return out_dict
+
+
+def run_openvino(model_path:str):
     from openvino.runtime import Core
     ie=Core()
     net = ie.read_model(model=model_path)
@@ -179,20 +189,35 @@ def main_openvino(model_path:str):
         result = model(IN_list)
 
 
-def main_inference(model_path:str, igpu:int):
+def run_coreml(model_path:str):
+    model, input_layers, output_layers = si.inspect_proxy(model_path, True)
+
+    IN_dict = create_IN_dict_np(input_layers)
+    result = model(IN_dict)
+    
+    for names, v in IN_dict.items:
+        print('input', names, v.shape, v.dtype)
+    for l, r in result.items():
+        print('output', next(iter(l.names)), r.shape, r.dtype)
+    
+    for _ in tqdm.trange(20000):
+        result = model(IN_dict)
+    
+
+def run_inference(model_path:str, igpu:int):
     assert osp.isfile(model_path)
     ext = osp.splitext(model_path)[-1]
 
     if ext == '.onnx':
-        main_onnx(model_path)
+        run_onnx(model_path)
     elif ext == '.om':
-        main_om(model_path, igpu)
+        run_om(model_path, igpu)
     elif ext == '.rknn':
-        main_rknn(model_path, igpu)
+        run_rknn(model_path, igpu)
     elif ext in ['.engine', '.trt']:
-        main_trt(model_path, igpu)
+        run_trt(model_path, igpu)
     elif ext in ['.xml']:
-        main_openvino(model_path)
+        run_openvino(model_path)
 
 
 if __name__ == '__main__':
@@ -202,4 +227,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     model_path = args.model_path
     igpu = args.ithread
-    main_inference(model_path, igpu)
+    run_inference(model_path, igpu)

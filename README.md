@@ -6,7 +6,7 @@ SINN is widely supported in many deployed neural network models.
 
 ## Install SINN
 ```
-pip install sinn
+pip install git+https://github.com/chenxinfeng4/siinn.git
 siinn inspect ./yolovn8.onnx|om|xml|engine|rknn
 siinn run ./yolovn8.onnx
 ```
